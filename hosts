@@ -1,0 +1,7 @@
+[ragnar]
+192.168.0.10
+
+[ragnar:vars]
+# https://stackoverflow.com/questions/42835626/ansible-to-use-the-ssh-connection-type-with-passwords-you-must-install-the-s
+ansible_connection=paramiko
+ansible_user=tim

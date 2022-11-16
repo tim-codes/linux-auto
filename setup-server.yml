@@ -1,0 +1,99 @@
+- hosts: all
+  become: 'yes' # execute as sudo
+  vars:
+    packages:
+      - curl
+      - glances
+      - debian-keyring
+      - debian-archive-keyring
+      - apt-transport-https
+      - tldr
+  tasks:
+    - name: Prepare
+      shell:
+        cmd: |
+          # setup the ansible state dir for this playbook
+          mkdir -p /var/ansible/state && touch /var/ansible/state/prepare
+        creates: /var/ansible/state/prepare
+    - name: Install Docker
+      snap:
+        name: docker
+        state: present
+    - name: Install Mirok8s
+      snap:
+        name: docker
+        state: present
+        classic: yes
+    - name: Create Docker and Microk8s groups.
+      group:
+        name: '{{ item }}'
+        state: present
+      with_items:
+        - docker
+        - microk8s
+    - name: Add user to Docker and Microk8s groups.
+      user:
+        name: '{{ lookup("ENV", "USER") }}'
+        state: present
+        groups:
+          - docker
+          - microk8s
+        append: true
+    - name: Enable Microk8s addons
+      command: microk8s enable dashboard metrics-server
+    - name: Apt update & upgrade
+      apt:
+        upgrade: yes
+        update_cache: yes
+    - name: Install apt packages
+      apt:
+        name: '{{ packages }}'
+        state: present # install if missing else skip it
+    - name: Install caddy
+      shell:
+        cmd: |
+          curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+          curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+          apt update
+          apt install caddy
+          touch /var/ansible/state/caddy
+        creates: /var/ansible/state/caddy
+#       async: 15 # timeout after 15seconds
+#       register: debug_install_caddy
+#     - name: Debug stdout [install_caddy]
+#       debug:
+#         msg: '{{ debug_install_caddy.stdout }}'
+#     - name: Debug stderr [install_caddy]
+#       debug:
+#         msg: '{{ debug_install_caddy.stderr }}'
+    - name: Add Caddyfile
+      copy:
+        src: ./Caddyfile
+        dest: /etc/caddy/Caddyfile
+    - name: Reload Caddy service
+      shell: |
+        systemctl start caddy
+        systemctl reload caddy
+    - name: Start Microk8s
+      command: microk8s start
+
+# non-sudo
+- hosts: all
+  tasks:
+    - name: Setup custom bashrc file
+      shell:
+        cmd: |
+          echo '. ~/.ansible_bashrc' >> ~/.bashrc
+          touch ~/.ansible_bashrc
+        creates: ~/.ansible_bashrc
+    - name: Configure Shell
+      shell: |
+        cat <<EOT > .ansible_bashrc
+        alias kubectl="microk8s kubectl"
+        alias k="microk8s kubectl"
+        EOT
+        . ~/.bashrc
+    - name: Update tldr
+      shell: |
+        mkdir -p $HOME/.local/share
+        tldr -u
