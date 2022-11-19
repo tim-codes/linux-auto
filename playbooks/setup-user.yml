@@ -1,0 +1,22 @@
+# non-sudo
+- hosts: all
+  tasks:
+    - name: Setup custom bashrc file
+      shell:
+        cmd: |
+          echo '. ~/.ansible_bashrc' >> ~/.bashrc
+          touch ~/.ansible_bashrc
+        creates: ~/.ansible_bashrc
+
+    - name: Upload shell config
+      copy:
+        src: ../server/.bashrc
+        dest: ~/.ansible_bashrc
+
+    - name: Reload shell
+      shell: . ~/.bashrc
+
+    - name: Update tldr
+      shell: |
+        mkdir -p ~/.local/share
+        tldr -u
