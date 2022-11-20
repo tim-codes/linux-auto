@@ -9,6 +9,9 @@
       - apt-transport-https
       - tldr
       - samba
+      - transmission-cli
+      - transmission-common
+      - transmission-daemon
   tasks:
     - name: Setup remote state dir
       command:
@@ -68,8 +71,10 @@
         ufw allow https
         ufw allow samba
         ufw allow 32400
+        ufw allow 9091
+        ufw allow 51413
         ufw enable
-      async: 5
+#       async: 10
 
     - name: Install Plex
       shell:
@@ -84,7 +89,7 @@
 
     - name: Configure Plex
       copy:
-        src: ./server/plex.conf
+        src: ../server/plex.conf
         dest: /etc/systemd/system/plexmediaserver.service.d/override.conf
 
     - name: Restart Plex
@@ -124,8 +129,41 @@
         cmd: cp /etc/samba/smb.conf /etc/samba/smb.conf_backup
         creates: /etc/samba/smb.conf_backup
 
-# todo: setup users/groups/samba-shares
+    - name: Add custom samba config
+      copy:
+        src: ../server/smb.conf
+        dest: /etc/samba/smb.conf
+        force: yes
 
-    - name: Enable SMB
+    - name: Add [tim] samba config
+      copy:
+        src: ../server/tim.smb.conf
+        dest: /etc/samba/tim.smb.conf
+        force: yes
+
+    - name: Enable samba daemon
       command: systemctl enable --now smbd
 
+    - name: Reload samba daemon (for config changes)
+      command: service smbd restart
+
+    - name: Stop Transmission
+      command: service transmission-daemon stop
+
+    - name: Configure Transmission
+      copy:
+        src: ../server/transmission.json
+        dest: /var/lib/transmission-daemon/info/settings.json
+        force: yes
+
+    - name: Increase memory buffer for Transmission
+      shell:
+        cmd: |
+          echo "net.core.rmem_max = 4194304" >> /etc/sysctl.conf
+          echo "net.core.wmem_max = 1048576" >> /etc/sysctl.conf
+          sysctl -p
+          sysctl --system
+        creates: /var/ansible/state/sysctl_mem
+
+    - name: Start Transmission
+      command: service transmission-daemon start
