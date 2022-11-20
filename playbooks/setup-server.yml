@@ -71,13 +71,31 @@
         ufw enable
       async: 5
 
+    - name: Install Plex
+      shell:
+        cmd: |
+          echo deb [signed-by=/usr/share/keyrings/plex.gpg] https://downloads.plex.tv/repo/deb public main | tee /etc/apt/sources.list.d/plexmediaserver.list
+          wget -O- https://downloads.plex.tv/plex-keys/PlexSign.key | gpg --dearmor | tee /usr/share/keyrings/plex.gpg
+          apt update && apt install -y plexmediaserver
+          systemctl enable plexmediaserver
+          touch /var/ansible/state/plex
+          mkdir -p /etc/systemd/system/plexmediaserver.service.d
+        creates: /var/ansible/state/plex
+
+    - name: Configure Plex
+      copy:
+        src: ./server/plex.conf
+        dest: /etc/systemd/system/plexmediaserver.service.d/override.conf
+
+    - name: Restart Plex
+      command: systemctl daemon-reload
+
     - name: Install caddy
       command:
         cmd: |
           curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
           curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
-          apt update
-          apt install caddy
+          apt update && apt install -y caddy
           touch /var/ansible/state/caddy
         creates: /var/ansible/state/caddy
 #       async: 15 # timeout after 15 seconds
