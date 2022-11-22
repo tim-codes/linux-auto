@@ -1,2 +1,6 @@
 :80
-respond "Hello this is Ragnar!!!"
+
+redir /transmission /transmission/web
+reverse_proxy /transmission/web localhost:9091
+
+respond / "Hello this is Ragnar!!!"

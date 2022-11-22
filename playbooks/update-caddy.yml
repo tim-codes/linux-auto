@@ -1,0 +1,13 @@
+- hosts: all
+  become: yes
+  tasks:
+    - name: Add Caddyfile
+      copy:
+        src: ../server/Caddyfile
+        dest: /etc/caddy/Caddyfile
+        force: yes
+
+    - name: Reload Caddy service
+      shell: |
+        systemctl start caddy
+        systemctl reload caddy

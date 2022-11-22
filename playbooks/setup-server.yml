@@ -1,5 +1,5 @@
 - hosts: all
-  become: 'yes' # execute as sudo
+  become: yes # execute as sudo
   vars:
     packages:
       - curl
@@ -12,20 +12,57 @@
       - transmission-cli
       - transmission-common
       - transmission-daemon
+      - duf
+      - ca-certificates
+      - gnupg
+      - lsb-release
+
   tasks:
     - name: Setup remote state dir
       command:
         cmd: mkdir -p /var/ansible/state
         creates: /var/ansible/state
 
-    - name: Install Docker
-      snap:
-        name: docker
-        state: present
+    - name: Apt update & upgrade
+      apt:
+        upgrade: yes
+        update_cache: yes
 
-    - name: Install Microk8s
+    - name: Install apt packages
+      apt:
+        name: '{{ packages }}'
+        state: present # install if missing else skip it
+
+    - name: Install Docker - get keyrings
+      shell:
+        cmd: |
+          mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        creates: /var/ansible/state/docker
+      async: 3
+      register: debug_docker_get_keyrings
+
+    - name: Debug stdout [install_docker_get_keyrings]
+      debug:
+        msg: '{{ debug_docker_get_keyrings.stdout }}'
+
+    - name: Debug stderr [install_docker_get_keyrings]
+      debug:
+        msg: '{{ debug_docker_get_keyrings.stderr }}'
+
+    - name: Install Docker - apt update & install
+      apt:
+        update_cache: yes
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+
+    - name: Install Microk8s (snap)
       snap:
-        name: docker
+        name: microk8s
         state: present
         classic: yes
 
@@ -52,16 +89,6 @@
     - name: Start Microk8s
       command: microk8s start
 
-    - name: Apt update & upgrade
-      apt:
-        upgrade: yes
-        update_cache: yes
-
-    - name: Install apt packages
-      apt:
-        name: '{{ packages }}'
-        state: present # install if missing else skip it
-
     - name: Setup Firewall
       command: |
         ufw default deny incoming
@@ -71,40 +98,51 @@
         ufw allow https
         ufw allow samba
         ufw allow 32400
-        ufw allow 9091
         ufw allow 51413
+        ufw allow 81
         ufw enable
 #       async: 10
 
-    - name: Install Plex
+    - name: Install Plex - get keyrings
       shell:
         cmd: |
           echo deb [signed-by=/usr/share/keyrings/plex.gpg] https://downloads.plex.tv/repo/deb public main | tee /etc/apt/sources.list.d/plexmediaserver.list
           wget -O- https://downloads.plex.tv/plex-keys/PlexSign.key | gpg --dearmor | tee /usr/share/keyrings/plex.gpg
-          apt update && apt install -y plexmediaserver
-          systemctl enable plexmediaserver
-          touch /var/ansible/state/plex
+          touch /var/ansible/state/plex-keyring
           mkdir -p /etc/systemd/system/plexmediaserver.service.d
-        creates: /var/ansible/state/plex
+        creates: /var/ansible/state/plex-keyring
+
+    - name: Install Plex - apt update & install
+      apt:
+        update_cache: yes
+        name: plexmediaserver
+
+    - name: Install Plex - enable service
+      command: systemctl enable plexmediaserver
 
     - name: Configure Plex
       copy:
         src: ../server/plex.conf
         dest: /etc/systemd/system/plexmediaserver.service.d/override.conf
+        force: yes
 
     - name: Restart Plex
       command: systemctl daemon-reload
 
-    - name: Install caddy
-      command:
-        cmd: |
-          curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-          curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
-          apt update && apt install -y caddy
-          touch /var/ansible/state/caddy
-        creates: /var/ansible/state/caddy
+#    - name: Install caddy - get keyrings
+#      shell:
+#        cmd: |
+#          curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+#          curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt | tee /etc/apt/sources.list.d/caddy-stable.list
+#          touch /var/ansible/state/caddy-keyring
+#        creates: /var/ansible/state/caddy-keyring
 #       async: 15 # timeout after 15 seconds
 #       register: debug_install_caddy
+
+    - name: Install caddy - apt update & install
+      apt:
+        update_cache: yes
+        name: caddy
 
 #     - name: Debug stdout [install_caddy]
 #       debug:
@@ -114,15 +152,16 @@
 #       debug:
 #         msg: '{{ debug_install_caddy.stderr }}'
 
-    - name: Add Caddyfile
-      copy:
-        src: ../server/Caddyfile
-        dest: /etc/caddy/Caddyfile
-
-    - name: Reload Caddy service
-      shell: |
-        systemctl start caddy
-        systemctl reload caddy
+#     - name: Add Caddyfile
+#       copy:
+#         src: ../server/Caddyfile
+#         dest: /etc/caddy/Caddyfile
+#         force: yes
+#
+#     - name: Reload Caddy service
+#       shell: |
+#         systemctl start caddy
+#         systemctl reload caddy
 
     - name: Backup samba config
       command:
@@ -140,6 +179,9 @@
         src: ../server/tim.smb.conf
         dest: /etc/samba/tim.smb.conf
         force: yes
+
+    # todo: automate smbpasswd setup (must create samba user that matches system user)
+    # smbpasswd -a tim
 
     - name: Enable samba daemon
       command: systemctl enable --now smbd
@@ -167,3 +209,36 @@
 
     - name: Start Transmission
       command: service transmission-daemon start
+
+#    - name: '[Group] app-data-writers'
+#      group:
+#        name: app-data-writers
+#        state: present
+#
+#    - name: '[Group] nginx-proxy-manager -> app-data-writers'
+#      user:
+#        name: nginx-proxy-manager
+#        state: present
+#        groups:
+#          - app-data-writers
+#        append: true
+
+    - name: Create app data directory
+      command:
+        cmd: mkdir -p /var/data
+        creates: /var/data
+
+    - name: Run nginx-proxy-manager container
+      docker_container:
+        name: nginx-proxy-manager
+        image: jc21/nginx-proxy-manager
+        restart: yes
+        restart_policy: unless-stopped
+        state: started
+        published_ports:
+          - 80:80
+          - 81:81
+          - 443:443
+        volumes:
+          - /var/data/nginx-proxy-manager/data:/data
+          - /var/data/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
