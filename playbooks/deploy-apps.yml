@@ -2,8 +2,10 @@
   become: yes
   tasks:
     - name: Create app data directory
-      command:
-        cmd: mkdir -p /var/data && chmod -R 777 /var/data
+      shell:
+        cmd: |
+          mkdir -p /var/data
+          chmod -R 777 /var/data
         creates: /var/data
 
     - name: Copy docker compose file to host
