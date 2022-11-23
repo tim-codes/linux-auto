@@ -1,0 +1,38 @@
+version: '3'
+
+networks:
+  default:
+    name: main
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - /tmp/data/redis:/data
+
+  tyk-gateway:
+    image: tykio/tyk-gateway
+    container_name: tyk-gateway
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - ./tyk.conf:/opt/tyk-gateway/tyk.conf
+      - /tmp/data/tyk/apps:/opt/tyk-gateway/apps
+      - /tmp/data/tyk/middleware:/opt/tyk-gateway/middleware
+      - /tmp/data/tyk/certs:/opt/tyk-gateway/certs
+    depends_on:
+      - redis
+
+
+#   portainer:
+#     image: portainer/portainer
+#     privileged: true
+#     restart: unless-stopped
+#     volumes:
+#       - /var/data/portainer:/data
+#       - /var/run/docker.sock:/var/run/docker.sock

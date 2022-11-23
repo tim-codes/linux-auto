@@ -1,0 +1,50 @@
+version: '3'
+
+networks:
+  default:
+    name: main
+
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: unless-stopped
+    expose:
+      - '6379'
+    volumes:
+      - /var/data/redis:/data
+
+  tyk-gateway:
+    image: tykio/tyk-gateway
+    container_name: tyk-gateway
+    restart: unless-stopped
+    ports:
+      - '80:8080'
+    volumes:
+      - /var/data/tyk/tyk.conf:/opt/tyk-gateway/tyk.conf:ro
+      - /var/data/tyk/apps:/opt/tyk-gateway/apps:ro
+      - /var/data/tyk/middleware:/opt/tyk-gateway/middleware:ro
+      - /var/data/tyk/certs:/opt/tyk-gateway/certs:ro
+    depends_on:
+      - redis
+    # level=warning msg="Reconnecting storage: Redis is either down or ws not configured" prefix=pub-sub
+    # ...
+    # This message is ok if seen once or twice - the redis healthcheck from the gateway takes a few seconds to turn green.
+
+  http-hello:
+    image: strm/helloworld-http
+    container_name: http-hello
+    restart: unless-stopped
+    expose:
+      - '80'
+
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    privileged: true
+    restart: unless-stopped
+    expose:
+      - '9443'
+    volumes:
+      - /var/data/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
