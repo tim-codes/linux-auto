@@ -18,10 +18,15 @@
       - lsb-release
 
   tasks:
-    - name: Setup remote state dir
+    - name: Setup remote dirs [/var/ansible/state]
       command:
         cmd: mkdir -p /var/ansible/state
         creates: /var/ansible/state
+
+    - name: Setup remote dirs [/var/ansible/run]
+      command:
+        cmd: mkdir -p /var/ansible/run
+        creates: /var/ansible/run
 
     - name: Apt update & upgrade
       apt:
@@ -59,6 +64,7 @@
           - docker-ce-cli
           - containerd.io
           - docker-compose-plugin
+          - docker-compose
 
     - name: Install Microk8s (snap)
       snap:
@@ -209,36 +215,3 @@
 
     - name: Start Transmission
       command: service transmission-daemon start
-
-#    - name: '[Group] app-data-writers'
-#      group:
-#        name: app-data-writers
-#        state: present
-#
-#    - name: '[Group] nginx-proxy-manager -> app-data-writers'
-#      user:
-#        name: nginx-proxy-manager
-#        state: present
-#        groups:
-#          - app-data-writers
-#        append: true
-
-    - name: Create app data directory
-      command:
-        cmd: mkdir -p /var/data
-        creates: /var/data
-
-    - name: Run nginx-proxy-manager container
-      docker_container:
-        name: nginx-proxy-manager
-        image: jc21/nginx-proxy-manager
-        restart: yes
-        restart_policy: unless-stopped
-        state: started
-        published_ports:
-          - 80:80
-          - 81:81
-          - 443:443
-        volumes:
-          - /var/data/nginx-proxy-manager/data:/data
-          - /var/data/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
