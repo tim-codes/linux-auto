@@ -134,6 +134,12 @@
     - name: Restart Plex
       command: systemctl daemon-reload
 
+    - name: Create user - Brian
+      ansible.builtin.user:
+        name: brian
+        password: 'terces'
+        state: present
+
     - name: Backup samba config
       command:
         cmd: cp /etc/samba/smb.conf /etc/samba/smb.conf_backup
@@ -149,6 +155,12 @@
       copy:
         src: ../server/tim.smb.conf
         dest: /etc/samba/tim.smb.conf
+        force: yes
+    
+    - name: Add [brian] samba config
+      copy:
+        src: ../server/brian.smb.conf
+        dest: /etc/samba/brian.smb.conf
         force: yes
 
     # todo: automate smbpasswd setup (must create samba user that matches system user)
