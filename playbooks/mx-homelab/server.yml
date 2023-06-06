@@ -1,0 +1,142 @@
+- hosts: all
+  become: yes # execute as sudo
+  vars:
+    packages:
+      - curl
+      - glances
+      - debian-keyring
+      - debian-archive-keyring
+      - apt-transport-https
+      - tldr
+      - samba
+      - transmission-cli
+      - transmission-common
+      - transmission-daemon
+#      - duf
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - apt-transport-https
+
+  tasks:
+    - name: Setup remote dirs [/var/ansible/state]
+      command:
+        cmd: mkdir -p /var/ansible/state
+        creates: /var/ansible/state
+    
+    - name: Apt update & upgrade
+      apt:
+        upgrade: yes
+        update_cache: yes
+
+    - name: Install apt packages
+      apt:
+        name: '{{ packages }}'
+        state: present # install if missing else skip it
+    
+    - name: Install Docker - get keyrings
+      shell:
+        cmd: |
+          mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        creates: /var/ansible/state/docker
+      async: 3
+      register: debug_docker_get_keyrings
+
+    - name: Debug stdout [install_docker_get_keyrings]
+      debug:
+        msg: '{{ debug_docker_get_keyrings.stdout }}'
+
+    - name: Debug stderr [install_docker_get_keyrings]
+      debug:
+        msg: '{{ debug_docker_get_keyrings.stderr }}'
+
+    - name: Install Docker - apt update & install
+      apt:
+        update_cache: yes
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+          - docker-compose
+
+    - name: Create Docker group.
+      group:
+        name: '{{ item }}'
+        state: present
+      with_items:
+        - docker
+
+    - name: Add users to Docker group.
+      user:
+        name: '{{ item }}'
+        state: present
+        groups:
+          - docker
+        append: true
+      with_items:
+        - ansible
+        - tim
+    
+    - name: Create user - Brian
+      ansible.builtin.user:
+        name: brian
+        password: 'terces'
+        state: present
+
+    - name: Setup Firewall
+      shell: |
+        ufw --force enable
+        ufw allow ssh
+        ufw default deny incoming
+        ufw default allow outgoing
+        ufw allow http
+        ufw allow https
+        ufw allow samba
+        ufw allow 32400 comment "plex"
+        ufw allow 9091 comment "transmission"
+#        ufw allow 51413 # what is this?
+#        ufw allow 9443 comment "tyk"
+
+    - name: Create user - Brian
+      ansible.builtin.user:
+        name: brian
+        password: 'terces'
+        state: present
+
+    - name: Backup samba config
+      command:
+        cmd: cp /etc/samba/smb.conf /etc/samba/smb.conf_backup
+        creates: /etc/samba/smb.conf_backup
+
+    - name: Add custom samba config
+      copy:
+        src: "{{ playbook_dir }}/../../server/smb.conf"
+        dest: /etc/samba/smb.conf
+        force: yes
+
+    - name: Add [tim] samba config
+      copy:
+        src: "{{ playbook_dir }}/../../server/tim.smb.conf"
+        dest: /etc/samba/tim.smb.conf
+        force: yes
+
+    - name: Add [brian] samba config
+      copy:
+        src: "{{ playbook_dir }}/../../server/brian.smb.conf"
+        dest: /etc/samba/brian.smb.conf
+        force: yes
+
+    # todo: automate smbpasswd setup (must create samba user that matches system user)
+    # smbpasswd -a tim
+
+    - name: Unmask samba service
+      command: sudo systemctl unmask smbd.service
+    
+    - name: Enable samba daemon
+      command: systemctl enable --now smbd
+
+    - name: Reload samba daemon (for config changes)
+      command: service smbd restart

@@ -1,6 +1,11 @@
 - hosts: all
   become: yes
   tasks:
+    - name: Setup remote dirs [/var/ansible/run]
+      command:
+        cmd: mkdir -p /var/ansible/run
+        creates: /var/ansible/run
+    
     - name: Create app data directory
       shell:
         cmd: |
@@ -10,13 +15,13 @@
 
     - name: Copy docker compose file to host
       copy:
-        src: ../server/docker-compose.yml
+        src: "{{ playbook_dir }}/../../server/docker-compose.yml"
         dest: /var/ansible/run/docker-compose.yml
         force: true
 
     - name: Copy tyk files
       copy:
-        src: ../server/tyk
+        src: "{{ playbook_dir }}/../../server/tyk"
         dest: /var/data/
         force: yes
 

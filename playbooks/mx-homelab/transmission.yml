@@ -1,0 +1,30 @@
+- hosts: all
+  become: yes # execute as sudo
+  tasks:
+    - name: Set download folder permissions
+      shell:
+        cmd: |
+          sudo usermod -a -G debian-transmission tim
+          sudo chgrp debian-transmission /mnt/store/transmission/downloads
+          sudo chmod 770 /mnt/store/transmission/downloads
+    
+    - name: Stop Transmission
+      command: service transmission-daemon stop
+
+    - name: Configure Transmission
+      copy:
+        src: "{{ playbook_dir }}/../../server/transmission.json"
+        dest: /var/lib/transmission-daemon/info/settings.json
+        force: yes
+
+    - name: Increase memory buffer for Transmission
+      shell:
+        cmd: |
+          echo "net.core.rmem_max = 4194304" >> /etc/sysctl.conf
+          echo "net.core.wmem_max = 1048576" >> /etc/sysctl.conf
+          sysctl -p
+          sysctl --system
+        creates: /var/ansible/state/sysctl_mem
+
+    - name: Start Transmission
+      command: service transmission-daemon start

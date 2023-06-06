@@ -19,4 +19,4 @@
     - name: Update tldr
       shell: |
         mkdir -p ~/.local/share
-        tldr -u
+        tldr --update

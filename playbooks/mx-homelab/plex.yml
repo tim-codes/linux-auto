@@ -1,0 +1,28 @@
+- hosts: all
+  become: yes # execute as sudo
+  tasks:
+    - name: Install Plex - get keyrings
+      shell:
+        cmd: |
+          echo deb [signed-by=/usr/share/keyrings/plex.gpg] https://downloads.plex.tv/repo/deb public main | tee /etc/apt/sources.list.d/plexmediaserver.list
+          wget -O- https://downloads.plex.tv/plex-keys/PlexSign.key | gpg --dearmor | tee /usr/share/keyrings/plex.gpg
+          touch /var/ansible/state/plex-keyring
+          mkdir -p /etc/systemd/system/plexmediaserver.service.d
+        creates: /var/ansible/state/plex-keyring
+
+    - name: Install Plex - apt update & install
+      apt:
+        update_cache: yes
+        name: plexmediaserver
+
+    - name: Install Plex - enable service
+      command: systemctl enable plexmediaserver
+
+    - name: Configure Plex
+      copy:
+        src: "{{ playbook_dir }}/../../server/plex.conf"
+        dest: /etc/systemd/system/plexmediaserver.service.d/override.conf
+        force: yes
+
+    - name: Restart Plex
+      command: systemctl daemon-reload  

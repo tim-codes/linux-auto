@@ -1,8 +1,9 @@
 version: '3'
 
-networks:
-  default:
-    name: main
+# default configuration
+#networks:
+#  default:
+#    driver: bridge
 
 services:
   redis:

@@ -16,17 +16,13 @@
       - ca-certificates
       - gnupg
       - lsb-release
+      - snapd
 
   tasks:
     - name: Setup remote dirs [/var/ansible/state]
       command:
         cmd: mkdir -p /var/ansible/state
         creates: /var/ansible/state
-
-    - name: Setup remote dirs [/var/ansible/run]
-      command:
-        cmd: mkdir -p /var/ansible/run
-        creates: /var/ansible/run
 
     - name: Apt update & upgrade
       apt:
@@ -37,7 +33,7 @@
       apt:
         name: '{{ packages }}'
         state: present # install if missing else skip it
-
+    
     - name: Install Docker - get keyrings
       shell:
         cmd: |
@@ -106,6 +102,7 @@
         ufw allow samba
         ufw allow 32400
         ufw allow 51413
+        ufw allow 9091
 #       async: 10
 
     - name: Install Plex - get keyrings
@@ -127,7 +124,7 @@
 
     - name: Configure Plex
       copy:
-        src: ../server/plex.conf
+        src: "{{ playbook_dir }}/../../server/plex.conf"
         dest: /etc/systemd/system/plexmediaserver.service.d/override.conf
         force: yes
 
@@ -147,24 +144,25 @@
 
     - name: Add custom samba config
       copy:
-        src: ../server/smb.conf
+        src: "{{ playbook_dir }}/../../server/smb.conf"
         dest: /etc/samba/smb.conf
         force: yes
 
     - name: Add [tim] samba config
       copy:
-        src: ../server/tim.smb.conf
+        src: "{{ playbook_dir }}/../../server/tim.smb.conf"
         dest: /etc/samba/tim.smb.conf
         force: yes
     
     - name: Add [brian] samba config
       copy:
-        src: ../server/brian.smb.conf
+        src: "{{ playbook_dir }}/../../server/brian.smb.conf"
         dest: /etc/samba/brian.smb.conf
         force: yes
 
     # todo: automate smbpasswd setup (must create samba user that matches system user)
-    # smbpasswd -a tim
+    # $ sudo smbpasswd -a tim -s
+    # (enter twice to verify)
 
     - name: Enable samba daemon
       command: systemctl enable --now smbd
@@ -177,7 +175,7 @@
 
     - name: Configure Transmission
       copy:
-        src: ../server/transmission.json
+        src: "{{ playbook_dir }}/../../server/transmission.json"
         dest: /var/lib/transmission-daemon/info/settings.json
         force: yes
 
