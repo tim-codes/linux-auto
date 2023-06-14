@@ -1,0 +1,14 @@
+- hosts: all
+  become: yes # execute as sudo
+  tasks:
+    - name: Install WoeUSB dependencies - apt update & install
+      apt:
+        update_cache: yes
+        name:
+          - git
+          - p7zip-full
+          - python3-pip
+          - python3-wxgtk4.0
+
+    - name: Install WoeUSB
+      command: pip3 install WoeUSB-ng

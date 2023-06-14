@@ -1,0 +1,169 @@
+- hosts:
+    - sif
+  become: yes # execute as sudo
+  vars:
+    packages:
+      - curl
+      - glances
+      - debian-keyring
+      - debian-archive-keyring
+      - apt-transport-https
+      - tldr
+      - samba
+      - duf
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - apt-transport-https
+      - ufw
+      - ansible
+      - software-properties-common
+
+  tasks:
+    - name: Setup remote dirs [/var/ansible/state]
+      command:
+        cmd: mkdir -p /var/ansible/state
+        creates: /var/ansible/state
+
+    - name: Apt update & upgrade
+      apt:
+        upgrade: yes
+        update_cache: yes
+
+    - name: Install apt packages
+      apt:
+        name: '{{ packages }}'
+        state: present # install if missing else skip it
+
+    - name: Install Docker - get keyrings
+      shell:
+        cmd: |
+          mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/debian/gpg \
+            | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+            | tee /etc/apt/sources.list.d/docker.list
+          touch /var/ansible/state/docker
+        creates: /var/ansible/state/docker
+      async: 3
+      register: debug_docker_get_keyrings
+
+    - name: Debug stdout [install_docker_get_keyrings]
+      debug:
+        msg: '{{ debug_docker_get_keyrings.stdout }}'
+
+    - name: Debug stderr [install_docker_get_keyrings]
+      debug:
+        msg: '{{ debug_docker_get_keyrings.stderr }}'
+
+    - name: Install Docker - apt update & install
+      apt:
+        update_cache: yes
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+          - docker-compose
+
+    - name: Create Docker group.
+      group:
+        name: '{{ item }}'
+        state: present
+      with_items:
+        - docker
+
+    - name: Add users to Docker group.
+      user:
+        name: '{{ item }}'
+        state: present
+        groups:
+          - docker
+        append: true
+      with_items:
+        - tim
+
+    - name: Setup Firewall
+      shell: |
+        ufw --force enable
+        ufw allow ssh
+        ufw default deny incoming
+        ufw default allow outgoing
+        ufw allow samba
+
+    - name: Backup samba config
+      command:
+        cmd: cp /etc/samba/smb.conf /etc/samba/smb.conf_backup
+        creates: /etc/samba/smb.conf_backup
+
+    - name: Add custom samba config
+      copy:
+        src: "{{ playbook_dir }}/etc/smb.conf"
+        dest: /etc/samba/smb.conf
+        force: yes
+
+    - name: Add [tim] samba config
+      copy:
+        src: "{{ playbook_dir }}/etc/tim.smb.conf"
+        dest: /etc/samba/tim.smb.conf
+        force: yes
+
+    # todo: automate smbpasswd setup (must create samba user that matches system user)
+    # smbpasswd -a tim
+
+    - name: Unmask samba service
+      command: sudo systemctl unmask smbd.service
+
+    - name: Enable samba daemon
+      command: systemctl enable --now smbd
+
+    - name: Reload samba daemon (for config changes)
+      command: service smbd restart
+
+    - name: prepare install 1password
+      async: 3
+      register: debug_prepare_1pwd
+      shell:
+        cmd: |
+          curl -sS https://downloads.1password.com/linux/keys/1password.asc \
+            | sudo gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg
+          echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/amd64 stable main' \
+            | sudo tee /etc/apt/sources.list.d/1password.list
+          sudo mkdir -p /etc/debsig/policies/AC2D62742012EA22/
+          curl -sS https://downloads.1password.com/linux/debian/debsig/1password.pol \
+            | sudo tee /etc/debsig/policies/AC2D62742012EA22/1password.pol
+          sudo mkdir -p /usr/share/debsig/keyrings/AC2D62742012EA22
+          curl -sS https://downloads.1password.com/linux/keys/1password.asc \
+            | sudo gpg --dearmor --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
+          touch /var/ansible/state/1password-prepare
+        creates: /var/ansible/state/1password-prepare
+    
+    - name: Debug stdout [debug_prepare_1pwd]
+      debug:
+        msg: '{{ debug_prepare_1pwd.stdout }}'
+
+    - name: Debug stderr [debug_prepare_1pwd]
+      debug:
+        msg: '{{ debug_prepare_1pwd.stderr }}'
+    
+    - name: install 1password
+      apt:
+        name: 1password
+        update_cache: yes
+        state: present # install if missing else skip it
+
+    - name: prepare install vivaldi
+      shell:
+        cmd: |
+          curl -fsSL https://repo.vivaldi.com/archive/linux_signing_key.pub \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/vivaldi.gpg
+          echo deb [arch=amd64,armhf signed-by=/usr/share/keyrings/vivaldi.gpg] https://repo.vivaldi.com/archive/deb/ stable main \
+            | sudo tee /etc/apt/sources.list.d/vivaldi.list
+          touch /var/ansible/state/vivaldi-prepare
+        creates: /var/ansible/state/vivaldi-prepare
+    
+    - name: install vivaldi
+      apt:
+        name: vivaldi-stable
+        update_cache: yes
+        state: present # install if missing else skip it
