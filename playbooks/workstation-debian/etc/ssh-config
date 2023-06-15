@@ -1,0 +1,4 @@
+host gitlab.com
+ hostname gitlab.com
+ identityfile /home/tim/.ssh/gitlab
+ user tim-oc

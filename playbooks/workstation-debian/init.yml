@@ -18,6 +18,7 @@
       - ufw
       - ansible
       - software-properties-common
+      - vim
 
   tasks:
     - name: Setup remote dirs [/var/ansible/state]
@@ -167,3 +168,22 @@
         name: vivaldi-stable
         update_cache: yes
         state: present # install if missing else skip it
+
+    - name: create gitlab ssh key
+      become_user: tim
+      command:
+        cmd: ssh-keygen -t ed25519 -C "tim@exxo.sh" -f /home/tim/.ssh/gitlab -q -N ""
+        creates: /home/tim/.ssh/gitlab
+#
+#    - name: set file perms - .ssh/gitlab
+#      file: dest=/home/tim/.ssh/gitlab mode='600'
+#
+#    - name: set file perms - .ssh/gitlab.pub
+#      file: dest=/home/tim/.ssh/gitlab.pub mode='644'
+
+    - name: Add ssh config
+      copy:
+        src: "{{ playbook_dir }}/etc/ssh-config"
+        dest: /home/tim/.ssh/config
+        force: no
+        owner: tim
