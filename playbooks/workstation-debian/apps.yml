@@ -3,9 +3,14 @@
   become: yes # execute as sudo
   
   tasks:
+    - name: install deps
+      apt:
+        update_cache: yes
+        name:
+          - libfuse2 # dependency of snap
+        state: present
+
     - name: prepare install 1password
-      async: 3
-      register: debug_prepare_1pwd
       shell:
         cmd: |
           curl -sS https://downloads.1password.com/linux/keys/1password.asc \
@@ -20,14 +25,6 @@
             | sudo gpg --dearmor --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
           touch /var/ansible/state/1password-prepare
         creates: /var/ansible/state/1password-prepare
-
-    - name: Debug stdout [debug_prepare_1pwd]
-      debug:
-        msg: '{{ debug_prepare_1pwd.stdout }}'
-
-    - name: Debug stderr [debug_prepare_1pwd]
-      debug:
-        msg: '{{ debug_prepare_1pwd.stderr }}'
 
     - name: prepare install vivaldi
       shell:
@@ -46,3 +43,9 @@
           - vivaldi-stable
         update_cache: yes
         state: present # install if missing else skip it
+
+    # ignore the deprecation warning, it's related to community.general internals
+    - name: install obsidian-classic
+      community.general.snap:
+        name: obsidian
+        classic: true
