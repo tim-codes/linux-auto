@@ -1,5 +1,5 @@
-- hosts:
-    - sif
+- hosts: localhost
+  connection: local
   become: yes # execute as sudo
   
   tasks:
