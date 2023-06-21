@@ -19,6 +19,7 @@
       - ansible
       - software-properties-common
       - vim
+      - snapd
 
   tasks:
     - name: Setup remote dirs [/var/ansible/state]
@@ -35,6 +36,12 @@
       apt:
         name: '{{ packages }}'
         state: present # install if missing else skip it
+
+    - name: Setup Snap
+      cmd: snap install core
+
+    - name: Install ansible community.general
+      cmd: ansible-galaxy collection install community.general
 
     - name: Install Docker - get keyrings
       shell:
@@ -66,6 +73,7 @@
           - containerd.io
           - docker-compose-plugin
           - docker-compose
+        state: present
 
     - name: Create Docker group.
       group:
