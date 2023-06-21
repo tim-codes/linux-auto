@@ -134,7 +134,7 @@
     - name: Create user - Brian
       ansible.builtin.user:
         name: brian
-        password: 'terces'
+        password: 'password'
         state: present
 
     - name: Backup samba config
