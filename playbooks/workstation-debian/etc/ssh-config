@@ -1,4 +1,2 @@
-host gitlab.com
- hostname gitlab.com
- identityfile /home/tim/.ssh/gitlab
- user tim-oc
+Host *
+  IdentityAgent ~/.1password/agent.sock

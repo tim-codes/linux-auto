@@ -1,0 +1,24 @@
+- hosts: localhost
+  connection: local
+  become: yes # execute as sudo
+  vars:
+    packages:
+      - build-essential
+      - zlib1g-dev
+      - libncurses5-dev
+      - libgdbm-dev
+      - libnss3-dev
+      - libssl-dev
+      - libreadline-dev
+      - libffi-dev
+      - libsqlite3-dev
+      - libbz2-dev
+
+  tasks:
+    - name: Install apt packages
+      apt:
+        update_cache: yes
+        name: '{{ packages }}'
+
+    - name: Install Python
+      script: "{{ playbook_dir }}/scripts/install-python.sh"

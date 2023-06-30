@@ -1,14 +1,31 @@
 - hosts: localhost
   connection: local
   become: yes # execute as sudo
-  
+
   tasks:
+    - name: Add ssh config
+      copy:
+        src: "{{ playbook_dir }}/etc/ssh-config"
+        dest: /home/tim/.ssh/config
+        force: no
+        owner: tim
+
     - name: install deps
       apt:
         update_cache: yes
         name:
-          - libfuse2 # dependency of snap
+          - fish
         state: present
+
+#    - name: configure fish
+#      script: "{{ playbook_dir }}/scripts/setup-fish.sh"
+
+    - name: install nvm
+      shell:
+        cmd: |
+          curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+          touch /var/ansible/state/nvm
+        creates: /var/ansible/state/nvm
 
     - name: prepare install 1password
       shell:
@@ -42,10 +59,37 @@
           - 1password
           - vivaldi-stable
         update_cache: yes
-        state: present # install if missing else skip it
 
     # ignore the deprecation warning, it's related to community.general internals
     - name: install obsidian-classic
       community.general.snap:
         name: obsidian
         classic: true
+
+    - name: install alacritty
+      become_user: tim
+      community.general.cargo:
+        name: alacritty
+
+    - name: install flatpak
+      apt:
+        name:
+          - flatpak
+          - gnome-software-plugin-flatpak
+
+    - name: setup flatpak flathub repo
+      command: flatpak remote-add --if-not-exists flathub flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+    - name: add balena etcher repository
+      command: curl -1sLf 'https://dl.cloudsmith.io/public/balena/etcher/setup.deb.sh' | sudo -E bash
+
+    - name: install misc apps
+      apt:
+        name:
+          - exa
+          - gparted
+          - vlc
+          - glances
+          - tldr
+          - duf
+
