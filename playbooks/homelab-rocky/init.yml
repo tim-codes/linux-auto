@@ -27,6 +27,31 @@
         update_cache: yes
         state: present # install if missing else skip it
 
+    - name: setup samba group
+      group:
+        name: smb-users
+        state: present
+
+    - name: Add group write permission to /mnt/store
+      ansible.builtin.file:
+        path: /mnt/store
+        mode: g+w
+
+    # this is getting stuck!
+#    - name: Set /mnt/store group ownership to smb-users
+#      ansible.builtin.file:
+#        path: /mnt/store
+#        state: directory
+#        recurse: yes
+#        group: smb-users
+
+    - name: setup user [tim]
+      user:
+        name: tim
+        groups:
+          - smb-users
+        append: yes
+
     - name: Backup samba config
       command:
         cmd: cp /etc/samba/smb.conf /etc/samba/smb.conf_backup
