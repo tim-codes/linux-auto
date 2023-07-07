@@ -44,7 +44,6 @@ alias p="pnpm"
 alias pg="fish $HOME/dev/linux-auto/install-pnpm-globals.fish"
 alias gcp="gcloud"
 alias oc="opencommit"
-alias bat="batcat"
 
 # Git aliases
 alias g="git"
