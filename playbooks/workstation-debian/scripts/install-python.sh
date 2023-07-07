@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 wget https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz
 tar -xf Python-3.10.*.tgz
 cd Python-3.10.*/
