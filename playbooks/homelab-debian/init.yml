@@ -1,0 +1,95 @@
+- hosts: ragnar
+  become: yes # execute as sudo
+  vars:
+    packages:
+      - curl
+      - glances
+      - debian-keyring
+      - debian-archive-keyring
+      - apt-transport-https
+      - tldr
+      - samba
+      - transmission-cli
+      - transmission-common
+      - transmission-daemon
+      #      - duf
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - apt-transport-https
+      - ufw
+
+  tasks:
+    - name: Apt update & upgrade
+      apt:
+        upgrade: yes
+        update_cache: yes
+
+    - name: Install apt packages
+      apt:
+        name: '{{ packages }}'
+        state: present # install if missing else skip it
+
+    - name: setup samba group
+      group:
+        name: smb-users
+        state: present
+
+    - name: Add group write permission to /mnt/store
+      ansible.builtin.file:
+        path: /mnt/store
+        mode: g+w
+
+    - name: Set /mnt/store group ownership to smb-users
+      ansible.builtin.file:
+        path: /mnt/store
+        state: directory
+        recurse: yes
+        group: smb-users
+
+    - name: setup user [tim]
+      user:
+        name: tim
+        groups:
+          - smb-users
+        append: yes
+
+    - name: Backup samba config
+      command:
+        cmd: cp /etc/samba/smb.conf /etc/samba/smb.conf_backup
+        creates: /etc/samba/smb.conf_backup
+
+    - name: Add custom samba config
+      copy:
+        src: "{{ playbook_dir }}/etc/smb.conf"
+        dest: /etc/samba/smb.conf
+        force: yes
+
+    - name: Add [tim] samba config
+      copy:
+        src: "{{ playbook_dir }}/etc/tim.smb.conf"
+        dest: /etc/samba/tim.smb.conf
+        force: yes
+
+    - name: Enable Samba/NetBIOS daemons
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      loop:
+        - nmbd
+        - smbd
+
+    - name: Setup Firewall
+      shell: |
+        ufw --force enable
+        ufw allow ssh
+        ufw default deny incoming
+        ufw default allow outgoing
+        ufw allow http
+        ufw allow https
+        ufw allow samba
+        ufw allow 32400 comment "plex"
+        ufw allow 9091 comment "transmission"
+  #        ufw allow 51413 # what is this?
+  #        ufw allow 9443 comment "tyk"
