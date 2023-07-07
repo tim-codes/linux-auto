@@ -28,9 +28,6 @@ set -x NVM_DIR "$HOME/.nvm"
 set -x nvm_default_version 18
 nvm use $nvm_default_version &> /dev/null # override as the var is not being ignored by nvm
 
-# set OpenAI API Key to opencommit config
-opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key)
-
 # use exa for dir commands
 alias l="ll"
 alias ls="exa"
@@ -100,6 +97,9 @@ end
 
 # Default git pull strategy
 git config --global pull.rebase true
+# Git user details
+git config --global user.name "Tim O'Connell"
+git config --global user.email "tim@exxo.sh"
 
 # Terraform aliases
 alias tfi="tf init"
