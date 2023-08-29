@@ -23,6 +23,9 @@ function rf
   source $fish_conf
 end
 
+set -x PATH "$HOME/.cargo/bin:$PATH"
+set -x PATH "/usr/local/go/bin:$PATH"
+
 set -x NVM_DIR "$HOME/.nvm"
 # nodejs configuration
 set -x nvm_default_version 18

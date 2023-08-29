@@ -66,10 +66,15 @@
         name: obsidian
         classic: true
 
-    - name: install alacritty
-      become_user: tim
-      community.general.cargo:
-        name: alacritty
+    - name: install alacritty deps
+      apt:
+        update_cache: yes
+        name:
+          - cmake
+          - libfreetype6-dev
+          - libfontconfig1-dev
+          - libxcb-xfixes0-dev
+          - libxkbcommon-dev
 
     - name: install flatpak
       apt:
@@ -77,14 +82,15 @@
           - flatpak
           - gnome-software-plugin-flatpak
 
-    - name: setup flatpak flathub repo
-      command: flatpak remote-add --if-not-exists flathub flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+#    - name: setup flatpak flathub repo
+#      command: flatpak remote-add --if-not-exists flathub flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-    - name: add balena etcher repository
-      command: curl -1sLf 'https://dl.cloudsmith.io/public/balena/etcher/setup.deb.sh' | sudo -E bash
+#    - name: add balena etcher repository
+#      command: curl -1sLf 'https://dl.cloudsmith.io/public/balena/etcher/setup.deb.sh' | sudo -E bash
 
     - name: install misc apps
       apt:
+        update_cache: yes
         name:
           - exa
           - gparted
@@ -93,3 +99,10 @@
           - tldr
           - duf
           - bat
+          - neofetch
+
+    - name: install cargo apps
+      community.general.cargo:
+        name:
+          - just
+        state: latest
