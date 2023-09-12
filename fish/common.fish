@@ -1,3 +1,6 @@
+# set OpenAI API Key to opencommit config
+opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key) 1&> /dev/null
+
 # Fish Theme
 set fish_theme eden
 

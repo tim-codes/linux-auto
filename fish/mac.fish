@@ -22,12 +22,12 @@ set -x GOPATH "$HOME/go"
 set -x NVM_DIR "$HOME/.nvm"
 set -x KUBE_CONFIG_PATH "$HOME/.kube/config"
 
-set -x PATH $PATH $HOME/bin:/usr/local/bin
-set -x PATH $PATH /opt/homebrew/bin
-set -x PATH $PATH /Applications/Sublime Text.app/Contents/SharedSupport/bin
-set -x PATH $PATH $PNPM_HOME:$PATH"PATH="$PNPM_HOME
-set -x PATH $PATH $HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin
-set -x PATH $PATH $HOME/sdk/go1.20.5/bin
-set -x PATH $PATH $HOME/go/bin
-set -x PATH $PATH $HOME/Library/Application Support/Jetbrains/Toolbox/scripts
-set -x PATH $PATH $HOME/Library/pnpm
+set PATH \
+  $HOME/bin:/usr/local/bin \
+  /opt/homebrew/bin \
+  /Applications/Sublime\ Text.app/Contents/SharedSupport/bin \
+  $HOME/sdk/go1.20.5/bin \
+  $HOME/go/bin \
+  $HOME/Library/Application Support/Jetbrains/Toolbox/scripts \
+  $PNPM_HOME \
+  $PATH
