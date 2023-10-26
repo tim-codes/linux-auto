@@ -1,5 +1,12 @@
 # set OpenAI API Key to opencommit config
-opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key) 1&> /dev/null
+if type -q opencommit
+  opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key) 1&> /dev/null
+end
+
+# poetry completions
+if type -q poetry
+  poetry completions fish > ~/.config/fish/completions/peotry.fish
+end
 
 # Fish Theme
 set fish_theme eden
@@ -26,19 +33,22 @@ function rf
   source $fish_conf
 end
 
-set -x PATH "$HOME/.cargo/bin:$PATH"
-set -x PATH "/usr/local/go/bin:$PATH"
+set -x PATH $PATH $HOME/.cargo/bin
+set -x PATH $PATH /usr/local/go/bin
+set -x PATH $PATH $HOME/bin/google-cloud-sdk/bin
 
-set -x NVM_DIR "$HOME/.nvm"
-# nodejs configuration
-set -x nvm_default_version 18
-nvm use $nvm_default_version &> /dev/null # override as the var is not being ignored by nvm
+if type -q nvm
+  set -x NVM_DIR "$HOME/.nvm"
+  # nodejs configuration
+  set -x nvm_default_version 18
+  nvm use $nvm_default_version &> /dev/null # override as the var is not being ignored by nvm
+end
 
 # use exa for dir commands
-alias l="ll"
 alias ls="exa"
 alias ll="exa -l"
 alias la="exa -la"
+alias l="ll"
 
 alias mp="mkdir -p"
 
@@ -50,6 +60,7 @@ alias p="pnpm"
 alias pg="fish $HOME/dev/linux-auto/install-pnpm-globals.fish"
 alias gcp="gcloud"
 alias oc="opencommit"
+alias ocn="opencommit --no-verify"
 
 # Git aliases
 alias g="git"
@@ -61,6 +72,16 @@ alias gp='git pull'
 
 alias ga='git add'
 alias gap='ga --patch'
+
+alias gl='git log --decorate'
+alias glo='gl --oneline'
+alias gls='gl --stat'
+alias glg='gl --graph --oneline'
+function glr
+  git log $argv origin/(git rev-parse --abbrev-ref HEAD)
+end
+alias glrg='glr --graph --oneline'
+alias glrs='glr --stat'
 
 function gd
   git diff --color $argv[1] | diff-so-fancy | bat
@@ -101,10 +122,17 @@ function gchh
     git -c core.hooksPath=/dev/null checkout HEAD -- $argv
   end
 end
+alias gsw='git switch'
+alias gsw-='git switch -'
+function gswp
+  git pull origin $argv[1]:$argv[1]
+  # git switch $argv[1]
+end
 
-# Default git pull strategy
+# git config
+git config --global core.editor "vim"
+git config --global push.autoSetupRemote true
 git config --global pull.rebase true
-# Git user details
 git config --global user.name "Tim O'Connell"
 git config --global user.email "tim@exxo.sh"
 
