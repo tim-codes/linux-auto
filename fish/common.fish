@@ -36,12 +36,18 @@ end
 set -x PATH $PATH $HOME/.cargo/bin
 set -x PATH $PATH /usr/local/go/bin
 set -x PATH $PATH $HOME/bin/google-cloud-sdk/bin
+set -x PATH $PATH $HOME/.local/bin
 
 if type -q nvm
   set -x NVM_DIR "$HOME/.nvm"
   # nodejs configuration
   set -x nvm_default_version 18
   nvm use $nvm_default_version &> /dev/null # override as the var is not being ignored by nvm
+end
+
+if type -q fnm
+  fnm install 18
+  fnm default 18
 end
 
 # use exa for dir commands
