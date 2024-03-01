@@ -5,4 +5,3 @@ set -x PATH $PATH $PNPM_HOME
 
 alias bat="batcat"
 alias python="python3"
-

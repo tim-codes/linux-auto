@@ -37,6 +37,8 @@ set -x PATH $PATH $HOME/.cargo/bin
 set -x PATH $PATH /usr/local/go/bin
 set -x PATH $PATH $HOME/bin/google-cloud-sdk/bin
 set -x PATH $PATH $HOME/.local/bin
+set -x PATH $PATH $HOME/.nix-profile/bin
+set -x PATH $PATH $HOME/.local/share/fnm
 
 if type -q nvm
   set -x NVM_DIR "$HOME/.nvm"
@@ -46,8 +48,9 @@ if type -q nvm
 end
 
 if type -q fnm
-  fnm install 18
+  fnm install 18 &> /dev/null
   fnm default 18
+  fnm env --use-on-cd | source
 end
 
 # use exa for dir commands
