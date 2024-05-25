@@ -35,6 +35,7 @@ end
 
 set -x PATH $PATH $HOME/.cargo/bin
 set -x PATH $PATH /usr/local/go/bin
+set -x PATH $PATH $HOME/bin
 set -x PATH $PATH $HOME/bin/google-cloud-sdk/bin
 set -x PATH $PATH $HOME/.local/bin
 set -x PATH $PATH $HOME/.nix-profile/bin
