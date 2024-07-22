@@ -12,10 +12,11 @@ sudo apt install -y \
   neofetch \
   flatpak \
   gnome-software-plugin-flatpak \
-  stow
+  stow \
+  bat
 
-sh <(curl -L https://nixos.org/nix/install) --no-daemon
-. $HOME/.nix-profile/etc/profile.d/nix.sh
+# sh <(curl -L https://nixos.org/nix/install) --no-daemon
+# . $HOME/.nix-profile/etc/profile.d/nix.sh
 
 nix-env -i \
   curl \
@@ -24,7 +25,6 @@ nix-env -i \
   fish \
   tldr \
   duf \
-  bat \
   git \
   diff-so-fancy \
   just \
@@ -35,7 +35,8 @@ nix-env -i \
   ripgrep \
   fd \
   lazygit \
-  glances
+  glances \
+  jq
 
 tldr -u
 
@@ -106,11 +107,27 @@ curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
 # install hydrapaper
 flatpak install flathub org.gabmus.hydrapaper
 
+# setup rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
 # setup alacritty
+apt install -y cmake pkg-config libfreetype6-dev libfontconfig1-dev libxcb-xfixes0-dev libxkbcommon-dev python3 build-essential
+rustup override set stable
+rustup update stable
+./dev/personal/linux-auto/playbooks/workstation-debian/scripts/install-alacritty.sh
 mkdir -p $HOME/.config/alacritty
 git clone https://github.com/alacritty/alacritty-theme $HOME/.config/alacritty/themes
 
 # https://github.com/tmux-plugins/tpm
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
-
+# install terraform
+wget -O- https://apt.releases.hashicorp.com/gpg \
+| gpg --dearmor \
+| sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+gpg --no-default-keyring \
+--keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+--fingerprint
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+| sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install -y terraform
