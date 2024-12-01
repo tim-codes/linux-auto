@@ -10,8 +10,8 @@ services:
     image: redis:7
     container_name: redis
     restart: unless-stopped
-    expose:
-      - '6379'
+    ports:
+      - '6379:6379'
     volumes:
       - /var/data/redis:/data
 
@@ -24,15 +24,15 @@ services:
     volumes:
       - /var/data/mongo:/data/db
 
-  # mongo-express:
-  #   image: mongo-express
-  #   container_name: mongo-express
-  #   environment:
-  #     ME_CONFIG_MONGODB_SERVER: mongo
-  #     ME_CONFIG_BASICAUTH_USERNAME: user
-  #     ME_CONFIG_BASICAUTH_PASSWORD: password
-  #   ports:
-  #     - '3001:8081'
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH_USERNAME: user
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+    ports:
+      - '3001:8081'
 
   tyk-gateway:
     image: tykio/tyk-gateway
@@ -51,20 +51,20 @@ services:
     # ...
     # This message is ok if seen once or twice - the redis healthcheck from the gateway takes a few seconds to turn green.
 
-  # tyk-dashboard:
-  #   image: tykio/tyk-dashboard
-  #   container_name: tyk-dashboard
-  #   restart: unless-stopped
-  #   ports:
-  #     - '3000:3000'
-  #   volumes:
-  #     - /var/data/tyk/tyk-dashboard.conf:/opt/tyk-dashboard/tyk_analytics.conf:ro
-
-  http-hello:
-    image: strm/helloworld-http
-    container_name: http-hello
+  tyk-dashboard:
+    image: tykio/tyk-dashboard
+    container_name: tyk-dashboard
     restart: unless-stopped
-    expose:
+    ports:
+      - '3000:3000'
+    volumes:
+      - /var/data/tyk/tyk-dashboard.conf:/opt/tyk-dashboard/tyk_analytics.conf:ro
+
+  hello:
+    image: strm/helloworld-http
+    container_name: hello
+    restart: unless-stopped
+    ports:
       - '80'
 
   portainer:
@@ -72,26 +72,14 @@ services:
     container_name: portainer
     privileged: true
     restart: unless-stopped
-    expose:
+    ports:
       - '9443'
     volumes:
       - /var/data/portainer:/data
       - /var/run/docker.sock:/var/run/docker.sock
   
-  # duc-client:
-  #   image: entec/duc-client
-  #   container_name: duc-client
-  #   state: stopped
-  #   env_file: /var/ansible/run/duc.env
-  #   restart: unless-stopped
-
-  home-assistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
-    container_name: home-assistant
-    volumes:
-      - /var/data/homeassistant:/config
-      - /etc/localtime:/etc/localtime:ro
-      - /run/dbus:/run/dbus:ro
+  duc-client:
+    image: entec/duc-client
+    container_name: duc-client
+    env_file: /var/ansible/run/duc.env
     restart: unless-stopped
-    privileged: true
-    network_mode: host

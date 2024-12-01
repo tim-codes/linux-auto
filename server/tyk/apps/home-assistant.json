@@ -1,18 +1,18 @@
 {
-  "name": "Portainer",
-  "api_id": "2",
+  "name": "Home Assistant",
+  "api_id": "3",
   "version_data": {
     "not_versioned": true,
     "versions": {
       "Default": {
-        "name": "Default"
+          "name": "Default"
       }
     }
   },
   "use_keyless": true,
   "proxy": {
-    "listen_path": "/portainer",
-    "target_url": "https://portainer:9443",
+    "listen_path": "/home-assistant",
+    "target_url": "http://localhost:8123",
     "strip_listen_path": true
   }
 }

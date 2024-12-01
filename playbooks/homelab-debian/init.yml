@@ -16,7 +16,6 @@
       - ca-certificates
       - gnupg
       - lsb-release
-      - apt-transport-https
       - ufw
 
   tasks:
@@ -91,5 +90,7 @@
         ufw allow samba
         ufw allow 32400 comment "plex"
         ufw allow 9091 comment "transmission"
+        ufw allow 8123 comment "home-assistant"
   #        ufw allow 51413 # what is this?
   #        ufw allow 9443 comment "tyk"
+      

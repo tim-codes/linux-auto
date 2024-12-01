@@ -6,7 +6,9 @@ sudo apt install -y \
   apt-transport-https \
   ca-certificates \
   gnupg \
+  lsb-core \
   lsb-release \
+  libcurl4 \
   software-properties-common \
   exa \
   neofetch \
@@ -131,3 +133,6 @@ gpg --no-default-keyring \
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
 | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt update && sudo apt install -y terraform
+
+# install ansible
+python3 -m pip install --upgrade --user ansible

@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: ragnar
   become: yes
   tasks:
     - name: Create app data directory
@@ -26,13 +26,7 @@
         dest: /var/ansible/run/duc.env
         force: true
 
-    # - name: Copy HomeAssistant config
-    #   copy:
-    #     src: "{{ playbook_dir }}/../../server/homeassistant"
-    #     dest: /var/data/homeassistant
-    #     force: false
-
     - name: Stand up docker services
-      docker_compose:
+      community.docker.docker_compose_v2:
         project_src: /var/ansible/run
         recreate: always # force recreate services
