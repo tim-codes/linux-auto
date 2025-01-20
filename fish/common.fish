@@ -1,8 +1,3 @@
-# set OpenAI API Key to opencommit config
-if type -q opencommit
-  opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key) 1&> /dev/null
-end
-
 # poetry completions
 if type -q poetry
   poetry completions fish > ~/.config/fish/completions/peotry.fish
@@ -55,6 +50,10 @@ if type -q fnm
   fnm default 18
   fnm env --use-on-cd | source
 end
+
+# for chatgpt-cli
+set -x OPENAI_API_KEY $(cat ~/keys/openai.key)
+alias chat="chatgpt"
 
 # set -x PATH $PATH $HOME/.cargo/bin
 # set -x PATH $PATH /usr/local/go/bin

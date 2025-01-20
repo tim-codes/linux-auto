@@ -35,8 +35,7 @@ alias where="type -a"
 
 # set OpenAI API Key to opencommit config
 # NOTE: can't call this in common.fish because opencommit is not in scope until PNPM_HOME is set
-opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key) 1&>/dev/null
+if type -q opencommit
+  opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key) 1&> /dev/null
+end
 
-# for chatgpt-cli
-set -x OPENAI_API_KEY $(cat ~/keys/openai.key)
-alias chat="chatgpt"
