@@ -1,0 +1,60 @@
+- name: Install Docker
+  hosts: ragnar
+  become: true
+  tasks:
+    - name: Setup remote dirs [/var/ansible/state]
+      ansible.builtin.file:
+        path: /var/ansible/state
+        mode: "0755"
+        state: directory
+
+    - name: Install Docker - get keyrings
+      ansible.builtin.shell:
+        cmd: |
+          # set -o pipefail
+          mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo "deb \
+            [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+            https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+            | tee /etc/apt/sources.list.d/docker.list > /dev/null
+          touch /var/ansible/state/docker-keyrings
+        creates: /var/ansible/state/docker-keyrings
+      async: 3
+      register: debug_docker_get_keyrings
+
+    - name: Debug stdout [install_docker_get_keyrings]
+      ansible.builtin.debug:
+        msg: "{{ debug_docker_get_keyrings.stdout }}"
+
+    - name: Debug stderr [install_docker_get_keyrings]
+      ansible.builtin.debug:
+        msg: "{{ debug_docker_get_keyrings.stderr }}"
+
+    - name: Install Docker - apt update & install
+      ansible.builtin.apt:
+        update_cache: true
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+          - docker-compose
+
+    - name: Create Docker group.
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - docker
+
+    - name: Add users to Docker group.
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: present
+        groups:
+          - docker
+        append: true
+      with_items:
+        - tim
+# REQUIRES USER LOG OUT/IN

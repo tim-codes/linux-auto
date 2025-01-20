@@ -1,0 +1,39 @@
+- name: Run Docker Compose
+  hosts: ragnar
+  become: true
+  tasks:
+    - name: Setup remote dirs [/var/ansible/run]
+      ansible.builtin.file:
+        path: /var/ansible/run
+        mode: "0755"
+        state: directory
+
+    - name: Create app data directory
+      ansible.builtin.file:
+        path: /var/data
+        mode: "0755"
+        state: directory
+
+    - name: Copy docker compose file to host
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../server/docker-compose.yml"
+        dest: /var/ansible/run/docker-compose.yml
+        mode: "0444" # read only
+        force: true
+
+    - name: Copy tyk files
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../server/tyk"
+        dest: /var/data/
+        mode: "0444" # read only
+        force: true
+
+    - name: Download DUC client env file
+      ansible.builtin.shell: |
+        gcloud auth activate-service-account --key-file /root/entec-cloud-gsa.json
+        gcloud --project entec-cloud secrets versions access --secret ragnar-noip latest > /var/ansible/run/duc.env
+
+    - name: Stand up docker services
+      community.docker.docker_compose:
+        project_src: /var/ansible/run
+        recreate: always # force recreate services

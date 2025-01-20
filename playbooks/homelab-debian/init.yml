@@ -1,5 +1,6 @@
-- hosts: ragnar
-  become: yes # execute as sudo
+- name: Initialise Ragnar
+  hosts: ragnar
+  become: true # execute as sudo
   vars:
     packages:
       - curl
@@ -20,18 +21,24 @@
       - ufw
 
   tasks:
+    - name: Setup remote dirs [/var/ansible/state]
+      ansible.builtin.file:
+        path: /var/ansible/state
+        mode: "0755"
+        state: directory
+
     - name: Apt update & upgrade
-      apt:
-        upgrade: yes
-        update_cache: yes
+      ansible.builtin.apt:
+        upgrade: true
+        update_cache: true
 
     - name: Install apt packages
-      apt:
-        name: '{{ packages }}'
+      ansible.builtin.apt:
+        name: "{{ packages }}"
         state: present # install if missing else skip it
 
-    - name: setup samba group
-      group:
+    - name: Setup samba group
+      ansible.builtin.group:
         name: smb-users
         state: present
 
@@ -44,44 +51,44 @@
       ansible.builtin.file:
         path: /mnt/store
         state: directory
-        recurse: yes
+        recurse: true
         group: smb-users
 
-    - name: setup user [tim]
-      user:
+    - name: Setup user [tim]
+      ansible.builtin.user:
         name: tim
         groups:
           - smb-users
-        append: yes
+        append: true
 
     - name: Backup samba config
-      command:
+      ansible.builtin.command:
         cmd: cp /etc/samba/smb.conf /etc/samba/smb.conf_backup
         creates: /etc/samba/smb.conf_backup
 
     - name: Add custom samba config
-      copy:
+      ansible.builtin.copy:
         src: "{{ playbook_dir }}/etc/smb.conf"
         dest: /etc/samba/smb.conf
-        force: yes
+        force: true
 
     - name: Add [tim] samba config
-      copy:
+      ansible.builtin.copy:
         src: "{{ playbook_dir }}/etc/tim.smb.conf"
         dest: /etc/samba/tim.smb.conf
-        force: yes
+        force: true
 
     - name: Enable Samba/NetBIOS daemons
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ item }}"
-        enabled: yes
+        enabled: true
         state: started
       loop:
         - nmbd
         - smbd
 
     - name: Setup Firewall
-      shell: |
+      ansible.builtin.shell: |
         ufw --force enable
         ufw allow ssh
         ufw default deny incoming
@@ -91,5 +98,35 @@
         ufw allow samba
         ufw allow 32400 comment "plex"
         ufw allow 9091 comment "transmission"
-  #        ufw allow 51413 # what is this?
-  #        ufw allow 9443 comment "tyk"
+        ufw allow 3000 comment "tyk-dashboard"
+        ufw allow 6379 comment "redis"
+        ufw allow 27017 comment "mongo"
+    #        ufw allow 51413 # what is this?
+    #        ufw allow 9443 comment "tyk"
+
+    - name: Install GCloud CLI - add keyrings
+      become: true
+      ansible.builtin.shell:
+        cmd: |
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+            | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+            | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          touch /var/ansible/state/gcloud-keyrings
+        creates: /var/ansible/state/gcloud-keyrings
+
+    - name: Install GCloud CLI - apt install
+      become: true
+      ansible.builtin.apt:
+        update_cache: true
+        name: google-cloud-cli
+        state: present
+
+    # MANUAL STEP: create /root/entec-cloud-gsa.json
+# TODO: this is not enabling for tim user
+
+# - name: Install GCloud CLI - activate service account
+#   ansible.builtin.cmd: gcloud auth activate-service-account --key-file /root/entec-cloud-gsa.json
+
+# - name: Install GCloud CLI - set config
+#   ansible.builtin.shell: gcloud config set project --quiet entec-cloud

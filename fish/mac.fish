@@ -1,33 +1,42 @@
 source ~/.config/fish/common.fish
+source /opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.fish.inc
 
-set -U fish_greeting ""
+set GO_VERSION "1.22.10"
+set -x GOPRIVATE "github.com/coreeng/*"
 
-# # set shell title to pwd
-function fish_title
-    set -q argv[1]; or set argv fish
-    # Looks like ~/d/fish: git log
-    # or /e/apt: fish
-    echo (fish_prompt_pwd_dir_length=1 prompt_pwd): $argv;
-end
+set -x PNPM_HOME "$HOME/Library/pnpm"
+set -x GOROOT "$HOME/sdk/go/go$GO_VERSION"
+set -x GOPATH "$HOME/go/go$GO_VERSION"
+set -x NVM_DIR "$HOME/.nvm"
+set -x KUBE_CONFIG_PATH "$HOME/.kube/config"
+set -x GOOGLE_APPLICATION_CREDENTIALS "$HOME/.config/gcloud/application_default_credentials.json"
+# enable IAP ssh tunnel to use numpy on system to increase performance
+set -x CLOUDSDK_PYTHON_SITEPACKAGES 1
+
+set -x PATH /opt/homebrew/bin:/opt/homebrew/sbin $PATH
+set -x PATH $HOME/bin:/usr/local/bin $PATH
+set -x PATH /Applications/Sublime Text.app/Contents/SharedSupport/bin $PATH
+set -x PATH $HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin $PATH
+set -x PATH $GOROOT/bin $PATH
+set -x PATH $GOPATH/bin $PATH
+set -x PATH $HOME/Library/Application Support/Jetbrains/Toolbox/scripts $PATH
+set -x PATH $HOME/Library/pnpm $PATH
+
+set -x GPG_TTY $(tty)
+
+# function dns:flush
+#   sudo dscacheutil -flushcache
+#   sudo killall -HUP mDNSResponder
+# end
 
 # fish aliases to mimic bash `which`
 alias which="type -p"
 alias where="type -a"
 
-source /opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.fish.inc
+# set OpenAI API Key to opencommit config
+# NOTE: can't call this in common.fish because opencommit is not in scope until PNPM_HOME is set
+opencommit config set OCO_OPENAI_API_KEY=$(cat ~/keys/openai.key) 1&>/dev/null
 
-set -x PNPM_HOME "$HOME/Library/pnpm"
-set -x GOROOT "$HOME/sdk/go1.20.5"
-set -x GOPATH "$HOME/go"
-set -x NVM_DIR "$HOME/.nvm"
-set -x KUBE_CONFIG_PATH "$HOME/.kube/config"
-
-set PATH \
-  $HOME/bin:/usr/local/bin \
-  /opt/homebrew/bin \
-  /Applications/Sublime\ Text.app/Contents/SharedSupport/bin \
-  $HOME/sdk/go1.20.5/bin \
-  $HOME/go/bin \
-  $HOME/Library/Application Support/Jetbrains/Toolbox/scripts \
-  $PNPM_HOME \
-  $PATH
+# for chatgpt-cli
+set -x OPENAI_API_KEY $(cat ~/keys/openai.key)
+alias chat="chatgpt"

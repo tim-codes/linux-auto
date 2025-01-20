@@ -13,6 +13,8 @@ set fish_theme eden
 
 source $HOME/.local/share/omf/pkg/omf/functions/omf.fish
 
+set -U fish_greeting ""
+
 # Make the blue color for directories more readable
 set -x LSCOLORS Exfxcxdxbxegedabagacad
 
@@ -33,13 +35,13 @@ function rf
   source $fish_conf
 end
 
-set -x PATH $PATH $HOME/.cargo/bin
-set -x PATH $PATH /usr/local/go/bin
-set -x PATH $PATH $HOME/bin
-set -x PATH $PATH $HOME/bin/google-cloud-sdk/bin
-set -x PATH $PATH $HOME/.local/bin
-set -x PATH $PATH $HOME/.nix-profile/bin
-set -x PATH $PATH $HOME/.local/share/fnm
+# set shell title to pwd
+function fish_title
+  set -q argv[1]; or set argv fish
+  # Looks like ~/d/fish: git log
+  # or /e/apt: fish
+  echo (fish_prompt_pwd_dir_length=1 prompt_pwd): $argv
+end
 
 if type -q nvm
   set -x NVM_DIR "$HOME/.nvm"
@@ -54,23 +56,32 @@ if type -q fnm
   fnm env --use-on-cd | source
 end
 
-# use exa for dir commands
-alias ls="exa"
-alias ll="exa -l"
-alias la="exa -la"
+# set -x PATH $PATH $HOME/.cargo/bin
+# set -x PATH $PATH /usr/local/go/bin
+# set -x PATH $PATH $HOME/bin
+# set -x PATH $PATH $HOME/bin/google-cloud-sdk/bin
+# set -x PATH $PATH $HOME/.local/bin
+# set -x PATH $PATH $HOME/.nix-profile/bin
+# set -x PATH $PATH $HOME/.local/share/fnm
+
+# use lsd for dir commands
 alias l="ll"
+alias ls="lsd"
+alias ll="lsd -l"
+alias la="lsd -la"
 
 alias mp="mkdir -p"
 
 alias python="python3"
 alias py="python"
-alias tf="terraform"
+alias tf="tofu"
 alias pm="podman"
 alias p="pnpm"
 alias pg="fish $HOME/dev/linux-auto/install-pnpm-globals.fish"
 alias gcp="gcloud"
 alias oc="opencommit"
-alias ocn="opencommit --no-verify"
+alias ocn="oc --no-verify"
+alias dt="devtunnel"
 
 # Git aliases
 alias g="git"
@@ -132,6 +143,7 @@ function gchh
     git -c core.hooksPath=/dev/null checkout HEAD -- $argv
   end
 end
+
 alias gsw='git switch'
 alias gsw-='git switch -'
 function gswp
@@ -161,7 +173,7 @@ alias byaml="bat -l yaml"
 alias bjson="bat -l json"
 
 function ip-local
-  ifconfig | grep 'broadcast' | awk '{print $2}'
+  ifconfig | grep broadcast | awk '{print $2}'
 end
 
 function ip-public
@@ -174,7 +186,7 @@ end
 
 # Clear docker container logs <container>
 function docker-clear
-  echo "" > $(docker inspect --format='{{.LogPath}}' $1)
+  echo "" >$(docker inspect --format='{{.LogPath}}' $1)
 end
 
 # Remove all stopped containers

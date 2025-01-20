@@ -1,0 +1,38 @@
+# https://www.noip.com/support/knowledgebase/install-linux-3-x-dynamic-update-client-duc
+
+- name: Install DDUC Client (noip.com)
+  hosts: ragnar
+  # become: true # execute as sudo
+  tasks:
+    - name: Install Client
+      ansible.builtin.shell:
+        cmd: |
+          wget https://dmej8g5cpdyqd.cloudfront.net/downloads/noip-duc_3.0.0-beta.7.tar.gz
+          tar xf ./noip-duc_3.0.0-beta.7.tar.gz
+          sudo apt install ./noip-duc_3.0.0-beta.7/binaries/noip-duc_3.0.0-beta.7_amd64.deb
+          sudo rm -rf ./noip-duc_3.0.0-beta.7*
+    
+    - name: Run DDUC Client
+      ansible.builtin.service:
+        name: transmission-daemon
+        state: stopped
+
+    - name: Configure Transmission
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../server/transmission.json"
+        dest: /var/lib/transmission-daemon/info/settings.json
+        force: true
+
+    - name: Increase memory buffer for Transmission
+      ansible.builtin.shell:
+        cmd: |
+          echo "net.core.rmem_max = 4194304" >> /etc/sysctl.conf
+          echo "net.core.wmem_max = 1048576" >> /etc/sysctl.conf
+          sysctl -p
+          sysctl --system
+        creates: /var/ansible/state/sysctl_mem
+
+    - name: Start Transmission
+      ansible.builtin.service:
+        name: transmission-daemon
+        state: started
